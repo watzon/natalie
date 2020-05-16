@@ -13,9 +13,14 @@ module Natalie
       File.expand_path('../../ext/onigmo', __dir__),
       File.expand_path('../../ext/hashmap/include', __dir__),
     ]
-    OBJ_PATH = File.expand_path('../../obj', __dir__)
-    HASHMAP_LIB_PATH = File.expand_path('../../ext/hashmap/build', __dir__)
-    ONIGMO_LIB_PATH = File.expand_path('../../ext/onigmo/.libs', __dir__)
+    LIBNATALIE_PATH = File.expand_path('../../build/libnatalie.a', __dir__)
+    LIBHASHMAP_PATH = File.expand_path('../../ext/hashmap/build/libhashmap.a', __dir__)
+    LIBONIGMO_PATH = File.expand_path('../../ext/onigmo/.libs/libonigmo.a', __dir__)
+    LIBS = [
+      LIBNATALIE_PATH,
+      LIBHASHMAP_PATH,
+      LIBONIGMO_PATH,
+    ]
 
     MAIN_TEMPLATE = File.read(File.join(SRC_PATH, 'main.c'))
     OBJ_TEMPLATE = <<-EOF
@@ -43,7 +48,6 @@ module Natalie
     attr_writer :load_path
 
     def compile
-      check_build
       write_file
       compile_c_to_binary
     end
@@ -56,13 +60,9 @@ module Natalie
       raise CompileError.new('There was an error compiling.') if $? != 0
     end
 
-    def c_files_to_compile
-      Dir[File.join(SRC_PATH, '*.c')].grep_v(/main\.c$/)
-    end
-
     def check_build
-      if Dir[File.join(OBJ_PATH, '*.o')].none?
-        puts 'please run: make build'
+      unless File.exist?(LIBNATALIE_PATH)
+        puts 'please build natalie first :-)'
         exit 1
       end
     end
@@ -134,8 +134,8 @@ module Natalie
       if compile_to_object_file
         "#{cc} #{build_flags} #{extra_cflags} #{inc_paths} -fPIC -x c -c #{@c_path} -o #{out_path}"
       else
-        libs = '-lm'
-        "#{cc} #{build_flags} #{extra_cflags} #{shared? ? '-fPIC -shared' : ''} #{inc_paths} -o #{out_path} #{OBJ_PATH}/*.o #{OBJ_PATH}/nat/*.o #{HASHMAP_LIB_PATH}/libhashmap.a #{ONIGMO_LIB_PATH}/libonigmo.a -x c #{@c_path || 'code.c'} #{libs}"
+        check_build
+        "#{cc} #{build_flags} #{extra_cflags} #{shared? ? '-fPIC -shared' : ''} #{inc_paths} -o #{out_path} -x c #{@c_path || 'code.c'} -x none #{LIBS.join(' ')} -lm"
       end
     end
 

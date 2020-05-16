@@ -58,10 +58,10 @@ clean_hashmap:
 clean_onigmo:
 	cd ext/onigmo && make clean || true
 
-test: build
+test:
 	ruby test/all.rb
 
-test_valgrind: build
+test_valgrind:
 	bin/natalie -c assign_test test/natalie/assign_test.nat
 	valgrind --leak-check=no --suppressions=test/valgrind-suppressions --error-exitcode=1 ./assign_test
 	bin/natalie -c block_spec spec/language/block_spec.nat
